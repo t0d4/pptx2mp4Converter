@@ -6,9 +6,10 @@ description   = "A simple CLI tool to convert a narration-embedded pptx into a s
 license       = "MIT"
 srcDir        = "src"
 binDir        = "bin"
-bin           = @["pptx2mp4Converter"]
+bin           = @["pptx2mp4conv"]
 
 
 # Dependencies
 
 requires "nim >= 1.6.2"
+requires "docopt >= 0.6.7"
