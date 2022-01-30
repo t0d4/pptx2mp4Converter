@@ -5,9 +5,6 @@ import std/terminal
 
 const externalRequirements: array[3, string] = ["soffice", "ffmpeg", "pdftoppm"]
 
-type
-    DependencyError* = object of Defect
-
 proc checkCommandExists(commandName: string, verbose: bool = true): int =
     ## Check whether a command exists.
     ## arguments:
@@ -34,15 +31,20 @@ proc checkDependencies*(verbose: bool = false): int =
     ##  verbose : bool - whether to print a message
     ## returns:
     ##  0 : if all dependencies are met
-    ##  raise DependencyError : if one or more dependencies are not met
+    ##  1 : if one or more dependencies are not met
     if verbose:
         stdout.write(
         "|--------------------|\n"&
         "| Dependency Checker |\n"&
         "|--------------------|\n")
 
+    result = 0
     for requirement in externalRequirements:
         if checkCommandExists(commandName=requirement, verbose=verbose) == 1:
-            raise newException(DependencyError, "{requirement} was not found in PATH".fmt)
+            result = 1
 
-    result = 0
+    if verbose:
+        if result == 0:
+            stdout.styledWriteLine(styleBright, fgGreen, "All dependencies met", resetStyle)
+        else:
+            stdout.styledWriteLine(styleBright, fgRed, "One or more dependencies are not met", resetStyle)

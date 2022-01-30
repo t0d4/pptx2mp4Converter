@@ -7,7 +7,7 @@ let
     pkgName = cmdArgs[0]
 
 # Load the nimble file and extract version information
-let nimbleFile = open("../{pkgName}.nimble", fmRead)
+let nimbleFile = open("../{pkgName}.nimble".fmt, fmRead)
 let lines = nimbleFile.readAll().split("\n")
 for line in lines:
     let matched = line.match(re"(version)\s*=\s*""(\d+\.\d+\.\d+)""$")
