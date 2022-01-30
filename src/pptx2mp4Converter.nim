@@ -9,7 +9,7 @@ let doc = """
 A simple CLI tool to convert a pptx(or ppsx) file to a mp4 video file.
 
 Usage:
-  pptx2mp4conv convert <filename>...
+  pptx2mp4conv <filename>...
   pptx2mp4conv (-h | --help)
   pptx2mp4conv --chkdeps
   pptx2mp4conv --version
