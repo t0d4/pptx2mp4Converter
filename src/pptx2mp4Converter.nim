@@ -10,7 +10,7 @@ import docopt
 import preparations
 
 const NimblePkgVersion {.strdefine.} = "Unknown"
-const doc = "pptx2mp4Converter v" & NimblePkgVersion & "\n" & 
+const Doc = "pptx2mp4Converter v" & NimblePkgVersion & "\n" & 
 """
 A simple CLI tool to convert a pptx(or ppsx) file to a mp4 video file.
 
@@ -34,11 +34,10 @@ Note:
   this program sometimes fails to find the correct executable. In that case, you can specify the path to
   the executable using the --libreoffice-executable option. Be careful that this option deactivates dependency checking.
 """
-
-
+const TmpDir: string = "/tmp/pptx2mp4conv"
 
 when isMainModule:
-  let args = docopt(doc, version = "pptx2mp4Converter " & NimblePkgVersion)
+  let args = docopt(Doc, version = "pptx2mp4Converter " & NimblePkgVersion)
 
   if args["--chkdeps"]:
     discard checkDependencies(verbose=true)
@@ -70,7 +69,7 @@ when isMainModule:
   if not args["--libreoffice-executable"]:
     if checkDependencies(verbose=false) == 1:
       stderr.styledWriteLine(fgRed, "Error: Dependencies are not met.", resetStyle)
-      stderr.styledWriteLine(fgRed, "Run \"./pptx2mp4conv --chkdeps\" to find out  packages", resetStyle)
+      stderr.styledWriteLine(fgRed, "Run \"./pptx2mp4conv --chkdeps\" to find out lacking packages", resetStyle)
       system.quit(1)
 
   # ブランチ切ってから作業だよ！
