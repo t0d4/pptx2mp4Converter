@@ -1,13 +1,19 @@
-import std/os
-import std/strformat
-import std/strutils
-import system
-import std/terminal
-import zip/zipfiles
+import
+  std/os
+  std/strformat
+  std/strutils
+  system
+  std/terminal
+  zip/zipfiles
 
-import docopt
+import
+  docopt
 
-import preparations
+import
+  preparations
+  helpers
+  myTemplates
+
 
 const NimblePkgVersion {.strdefine.} = "Unknown"
 const Doc = "pptx2mp4Converter v" & NimblePkgVersion & "\n" & 
@@ -37,7 +43,7 @@ Note:
 
 when isMainModule:
   let tmpDir: string = getTempDir.joinPath("pptx2mp4conv")
-  
+
   let args = docopt(Doc, version = "pptx2mp4Converter " & NimblePkgVersion)
 
   if args["--chkdeps"]:
@@ -72,3 +78,12 @@ when isMainModule:
       stderr.styledWriteLine(fgRed, "Error: Dependencies are not met.", resetStyle)
       stderr.styledWriteLine(fgRed, "Run \"./pptx2mp4conv --chkdeps\" to find out lacking packages", resetStyle)
       system.quit(1)
+
+  var z: ZipArchive
+  if not z.open(pptxFile):
+    stderr.styledWriteLine(fgRed, "Error: Failed to extract pptx: " & pptxFile, resetStyle)
+    system.quit(1)
+  let extractedPPTXDir = tmpDir.joinPath("extracted")
+  z.extractAll(extractedPPTXDir)
+
+  
