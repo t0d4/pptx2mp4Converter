@@ -34,9 +34,10 @@ Note:
   this program sometimes fails to find the correct executable. In that case, you can specify the path to
   the executable using the --libreoffice-executable option. Be careful that this option deactivates dependency checking.
 """
-const TmpDir: string = "/tmp/pptx2mp4conv"
 
 when isMainModule:
+  let tmpDir: string = getTempDir.joinPath("pptx2mp4conv")
+  
   let args = docopt(Doc, version = "pptx2mp4Converter " & NimblePkgVersion)
 
   if args["--chkdeps"]:
