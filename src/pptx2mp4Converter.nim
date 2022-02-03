@@ -72,5 +72,3 @@ when isMainModule:
       stderr.styledWriteLine(fgRed, "Error: Dependencies are not met.", resetStyle)
       stderr.styledWriteLine(fgRed, "Run \"./pptx2mp4conv --chkdeps\" to find out lacking packages", resetStyle)
       system.quit(1)
-
-  # ブランチ切ってから作業だよ！
