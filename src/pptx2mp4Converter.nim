@@ -1,17 +1,20 @@
+import std/[
+  algorithm,
+  exitprocs,
+  os,
+  sequtils,
+  strutils,
+  sugar,
+  terminal
+]
+
 import
-  std/os
-  std/strformat
-  std/strutils
-  system
-  std/terminal
+  docopt,
   zip/zipfiles
 
 import
-  docopt
-
-import
-  preparations
-  helpers
+  preparations,
+  helpers,
   myTemplates
 
 
@@ -41,8 +44,28 @@ Note:
   the executable using the --libreoffice-executable option. Be careful that this option deactivates dependency checking.
 """
 
+const TmpDirRoot*: string = getTempDir().joinPath("pptx2mp4conv")
+const ExtractedPPTXDir: string = TmpDirRoot.joinPath("extracted")
+const SlideXMLDir: string = ExtractedPPTXDir.joinPath("ppt", "slides")
+const RelationXMLDir: string = ExtractedPPTXDir.joinPath("ppt", "slides", "_rels")
+const MediaDir: string = ExtractedPPTXDir.joinPath("ppt", "media")
+const TmpVideoDir: string = TmpDirRoot.joinPath("videos")
+const TmpVideoFileListPath: string = TmpVideoDir.joinPath("videofiles.txt")
+const TmpPictureDir: string = TmpDirRoot.joinPath("pictures")
+const ModifiedPPTXFilepath: string = TmpDirRoot.joinPath("new.pptx")
+const ConvertedPDFFilepath: string = ModifiedPPTXFilepath.changeFileExt("pdf")
+const SilentM4AFilepath: string = TmpDirRoot.joinPath("silent.m4a")
+
+
 when isMainModule:
-  let tmpDir: string = getTempDir.joinPath("pptx2mp4conv")
+  # Create temporary workspaces
+  TmpDirRoot.createDir()
+  ExtractedPPTXDir.createDir()
+  TmpVideoDir.createDir()
+  TmpPictureDir.createDir()
+  # Register deletion of the temporary directory at the exit of this program
+  let deleteTempDir = generateTempDirRemover(TmpDirRoot)
+  #addExitProc(deleteTempDir)
 
   let args = docopt(Doc, version = "pptx2mp4Converter " & NimblePkgVersion)
 
@@ -79,11 +102,103 @@ when isMainModule:
       stderr.styledWriteLine(fgRed, "Run \"./pptx2mp4conv --chkdeps\" to find out lacking packages", resetStyle)
       system.quit(1)
 
-  var z: ZipArchive
-  if not z.open(pptxFile):
-    stderr.styledWriteLine(fgRed, "Error: Failed to extract pptx: " & pptxFile, resetStyle)
-    system.quit(1)
-  let extractedPPTXDir = tmpDir.joinPath("extracted")
-  z.extractAll(extractedPPTXDir)
+  # Extract the pptx file to the workspace
+  block extractPPTX:
+    var originalPPTX: ZipArchive
+    defer: originalPPTX.close()
+    if not originalPPTX.open(pptxFile):
+      stderr.styledWriteLine(fgRed, "Error: Failed to extract pptx: " & pptxFile, resetStyle)
+      system.quit(1)
+    originalPPTX.extractAll(ExtractedPPTXDir)
 
+  # Delete unnecessary audio icons from slides and output a modified pptx file
+  let slideXMLs: seq[string] = toSeq(walkDirs(SlideXMLDir.joinPath("slide*.xml")))
+  let slideCount: int = slideXMLs.len
+  withProgressDisplayAndErrorHandling(
+    shouldBeSilent = silent,
+    message = "1/  Modifying a copied version of the pptx file:"
+  ):
+    for slideXML in slideXMLs:
+      slideXML.deleteUnwantedAudioIcon()
+
+    block makeModifiedPPTX:
+      var modifiedPPTX: ZipArchive
+      defer: modifiedPPTX.close()
+      if not modifiedPPTX.open(ModifiedPPTXFilepath, fmWrite):
+        raise newException(MediaError, "Failed to make a modified pptx file in the temporary directory")
+      var
+        tokens: seq[string]
+        filepathInArchive: string
+      for file in walkDirRec(ExtractedPPTXDir, yieldFilter={pcFile}):
+        tokens = file.split($DirSep)
+        echo tokens
+        filepathInArchive = tokens[4..^1].join($DirSep)
+        modifiedPPTX.addFile(filepathInArchive, file)
   
+  # Convert the modified pptx file into a pdf file, and then convert the pdf file into png files
+  var pngFilepaths: seq[string]
+  withProgressDisplayAndErrorHandling(
+    shouldBeSilent = silent,
+    message = "2/  Converting the modified pptx file into png files:"
+  ):
+    ModifiedPPTXFilepath.convertIntoPDF(
+      libreofficeExecutable = libreofficeExecutable,
+      saveDir = ConvertedPDFFilepath.parentDir
+    )
+    pngFilepaths = ConvertedPDFFilepath.convertIntoPNGs(
+      saveDir = TmpPictureDir
+    )
+
+  # Collect audio filepaths from slide relationship XML and 
+  # create a silent audio file for silent slides.
+  var m4aFilepaths: seq[string]
+  withProgressDisplayAndErrorHandling(
+    shouldBeSilent = silent,
+    message = "3/  Collecting audio information and preparing audio files:"
+  ):
+    var slideRelationXMLs: seq[string] = toSeq(walkDirs(RelationXMLDir.joinPath("slide*.xml.rels")))
+    slideRelationXMLs.sort(cmpUsingFilename)
+
+    for slideRelationXML in slideRelationXMLs:
+      m4aFilepaths.add(slideRelationXML.seekAudioForTheSlide(
+        mediaDirpath = MediaDir,
+        defaultAudioFilepath=SilentM4AFilepath
+      ))
+    
+    # Abort if no audio file is found
+    if m4aFilepaths.len == 0:
+      raise newException(MediaError, "No audio file is found in the pptx file.")
+
+    createSilentAudioFile(
+      duration = durationOfSilentSlide,
+      saveTo = SilentM4AFilepath
+    )
+
+  # Check if the number of slide pngs is equal to the number of slide audio files (including silent audio)
+  if not pngFilepaths.len != m4aFilepaths.len:
+    stderr.styledWriteLine(fgRed, "Error: Something went wrong when ", resetStyle)
+    system.quit(1)
+
+  # Merge audio files and png files into video files for each slide
+  let tmpVideoFilepaths: seq[string] = collect(newSeq):
+      for slidenum in 1..slideCount: TmpVideoDir.joinPath("slide" & $slidenum & ".mp4")
+  withProgressDisplayAndErrorHandling(
+    shouldBeSilent = silent,
+    message = "4/  Merging audio files and png files into temporary video files:"
+  ):
+    for index in 0..<slideCount:
+      createVideoFromPNGAndM4A(
+        pngFilepath = pngFilepaths[index],
+        m4aFilepath = m4aFilepaths[index],
+        saveTo = tmpVideoFilepaths[index]
+      )
+
+  # Merge all temporary video files into one video file
+  withProgressDisplayAndErrorHandling(
+    shouldBeSilent = silent,
+    message = "5/  Merging all temporary video files into one video file:"
+  ):
+    tmpVideoFilepaths.concatenateVideos(
+      tmpVideoFileListPath = TmpVideoFileListPath,
+      saveTo = outputFile
+    )

@@ -1,4 +1,3 @@
-import os
 import osproc
 import std/strformat
 import std/terminal

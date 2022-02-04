@@ -6,7 +6,7 @@ description   = "A simple CLI tool to convert a narration-embedded pptx into a s
 license       = "MIT"
 srcDir        = "src"
 binDir        = "bin"
-bin           = @["pptx2mp4conv"]
+bin           = @["pptx2mp4Converter"]
 
 
 # Dependencies
