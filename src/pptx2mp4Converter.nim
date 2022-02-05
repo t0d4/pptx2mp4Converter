@@ -44,7 +44,7 @@ Note:
   the executable using the --libreoffice-executable option. Be careful that this option deactivates dependency checking.
 """
 
-const TmpDirRoot*: string = getTempDir().joinPath("pptx2mp4conv")
+const TmpDirRoot: string = getTempDir().joinPath("pptx2mp4conv")
 const ExtractedPPTXDir: string = TmpDirRoot.joinPath("extracted")
 const SlideXMLDir: string = ExtractedPPTXDir.joinPath("ppt", "slides")
 const RelationXMLDir: string = ExtractedPPTXDir.joinPath("ppt", "slides", "_rels")
@@ -52,20 +52,23 @@ const MediaDir: string = ExtractedPPTXDir.joinPath("ppt", "media")
 const TmpVideoDir: string = TmpDirRoot.joinPath("videos")
 const TmpVideoFileListPath: string = TmpVideoDir.joinPath("videofiles.txt")
 const TmpPictureDir: string = TmpDirRoot.joinPath("pictures")
+const TmpPictureFilepathTemplate: string = TmpPictureDir.joinPath("slide")  # This constant shouldn't be changed unless you update the implementation of cmpUsingFilename()
 const ModifiedPPTXFilepath: string = TmpDirRoot.joinPath("new.pptx")
 const ConvertedPDFFilepath: string = ModifiedPPTXFilepath.changeFileExt("pdf")
 const SilentM4AFilepath: string = TmpDirRoot.joinPath("silent.m4a")
 
 
 when isMainModule:
-  # Create temporary workspaces
+  # Delete the temporary directory if it exists, and register removal at the exit of this program
+  let deleteTempDir = generateTempDirRemover(TmpDirRoot)
+  deleteTempDir()
+  addExitProc(deleteTempDir)
+
+  # Create temporary workspaces. Watch out for the order
   TmpDirRoot.createDir()
   ExtractedPPTXDir.createDir()
   TmpVideoDir.createDir()
   TmpPictureDir.createDir()
-  # Register deletion of the temporary directory at the exit of this program
-  let deleteTempDir = generateTempDirRemover(TmpDirRoot)
-  #addExitProc(deleteTempDir)
 
   let args = docopt(Doc, version = "pptx2mp4Converter " & NimblePkgVersion)
 
@@ -110,13 +113,14 @@ when isMainModule:
       stderr.styledWriteLine(fgRed, "Error: Failed to extract pptx: " & pptxFile, resetStyle)
       system.quit(1)
     originalPPTX.extractAll(ExtractedPPTXDir)
+    sleep(SleepLengthBetweenIOOperations)
 
   # Delete unnecessary audio icons from slides and output a modified pptx file
-  let slideXMLs: seq[string] = toSeq(walkDirs(SlideXMLDir.joinPath("slide*.xml")))
+  let slideXMLs: seq[string] = sequtils.toSeq(walkFiles(SlideXMLDir.joinPath("slide*.xml")))
   let slideCount: int = slideXMLs.len
   withProgressDisplayAndErrorHandling(
     shouldBeSilent = silent,
-    message = "1/  Modifying a copied version of the pptx file:"
+    message = "1/5  Modifying a copied version of the pptx file:"
   ):
     for slideXML in slideXMLs:
       slideXML.deleteUnwantedAudioIcon()
@@ -131,40 +135,43 @@ when isMainModule:
         filepathInArchive: string
       for file in walkDirRec(ExtractedPPTXDir, yieldFilter={pcFile}):
         tokens = file.split($DirSep)
-        echo tokens
+        # tokens is an array like ["", "tmp", "pptx2mp4conv", "extracted", "ppt", "slides", "slide1.xml"]
+        # so filepath in the zip archive will start from 4th element in the array
         filepathInArchive = tokens[4..^1].join($DirSep)
         modifiedPPTX.addFile(filepathInArchive, file)
-  
+      sleep(SleepLengthBetweenIOOperations)
+
   # Convert the modified pptx file into a pdf file, and then convert the pdf file into png files
   var pngFilepaths: seq[string]
   withProgressDisplayAndErrorHandling(
     shouldBeSilent = silent,
-    message = "2/  Converting the modified pptx file into png files:"
+    message = "2/5  Converting the modified pptx file into png files:"
   ):
     ModifiedPPTXFilepath.convertIntoPDF(
       libreofficeExecutable = libreofficeExecutable,
       saveDir = ConvertedPDFFilepath.parentDir
     )
     pngFilepaths = ConvertedPDFFilepath.convertIntoPNGs(
-      saveDir = TmpPictureDir
+      saveTemplate = TmpPictureFilepathTemplate
     )
+    pngFilepaths.sort(cmpUsingFilename)
 
   # Collect audio filepaths from slide relationship XML and 
   # create a silent audio file for silent slides.
   var m4aFilepaths: seq[string]
   withProgressDisplayAndErrorHandling(
     shouldBeSilent = silent,
-    message = "3/  Collecting audio information and preparing audio files:"
+    message = "3/5  Collecting audio information and preparing audio files:"
   ):
-    var slideRelationXMLs: seq[string] = toSeq(walkDirs(RelationXMLDir.joinPath("slide*.xml.rels")))
+    var slideRelationXMLs: seq[string] = sequtils.toSeq(walkFiles(RelationXMLDir.joinPath("slide*.xml.rels")))
     slideRelationXMLs.sort(cmpUsingFilename)
 
     for slideRelationXML in slideRelationXMLs:
       m4aFilepaths.add(slideRelationXML.seekAudioForTheSlide(
         mediaDirpath = MediaDir,
-        defaultAudioFilepath=SilentM4AFilepath
+        defaultAudioFilepath = SilentM4AFilepath
       ))
-    
+
     # Abort if no audio file is found
     if m4aFilepaths.len == 0:
       raise newException(MediaError, "No audio file is found in the pptx file.")
@@ -175,8 +182,8 @@ when isMainModule:
     )
 
   # Check if the number of slide pngs is equal to the number of slide audio files (including silent audio)
-  if not pngFilepaths.len != m4aFilepaths.len:
-    stderr.styledWriteLine(fgRed, "Error: Something went wrong when ", resetStyle)
+  if pngFilepaths.len != m4aFilepaths.len:
+    stderr.styledWriteLine(fgRed, "Error: Something went wrong when trying to collect png files and m4a files.", resetStyle)
     system.quit(1)
 
   # Merge audio files and png files into video files for each slide
@@ -184,7 +191,7 @@ when isMainModule:
       for slidenum in 1..slideCount: TmpVideoDir.joinPath("slide" & $slidenum & ".mp4")
   withProgressDisplayAndErrorHandling(
     shouldBeSilent = silent,
-    message = "4/  Merging audio files and png files into temporary video files:"
+    message = "4/5  Merging audio files and png files into temporary video files:"
   ):
     for index in 0..<slideCount:
       createVideoFromPNGAndM4A(
@@ -194,9 +201,15 @@ when isMainModule:
       )
 
   # Merge all temporary video files into one video file
+  try:
+    removeFile(outputFile)
+  except OSError:
+    stderr.styledWriteLine(fgRed, "Output file already exists, and failed to delete it: " & outputFile, resetStyle)
+    quit(1)
+
   withProgressDisplayAndErrorHandling(
     shouldBeSilent = silent,
-    message = "5/  Merging all temporary video files into one video file:"
+    message = "5/5  Merging all temporary video files into one video file:"
   ):
     tmpVideoFilepaths.concatenateVideos(
       tmpVideoFileListPath = TmpVideoFileListPath,
