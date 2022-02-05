@@ -12,3 +12,5 @@ bin           = @["pptx2mp4Converter"]
 # Dependencies
 
 requires "nim >= 1.6.2"
+requires "docopt >= 0.6.7"
+requires "zip >= 0.3.1"
