@@ -62,7 +62,7 @@ when isMainModule:
   # Delete the temporary directory if it exists, and register removal of it at the exit of this program
   let deleteTempDir = generateTempDirRemover(TmpDirRoot)
   deleteTempDir()
-  #addExitProc(deleteTempDir)
+  addExitProc(deleteTempDir)
 
   # Create temporary workspaces. Watch out for the order
   TmpDirRoot.createDir()
