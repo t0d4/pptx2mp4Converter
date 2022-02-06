@@ -3,7 +3,6 @@
 ![Platform](https://img.shields.io/badge/platform-linux--64-lightgrey)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/t0d4/pptx2mp4Converter?color=blueviolet&display_name=tag)
 ![build](https://github.com/t0d4/pptx2mp4Converter/actions/workflows/main.yml/badge.svg)
-![Binary Size](https://img.shields.io/github/size/t0d4/pptx2mp4Converter/bin/pptx2mp4Converter?label=Binary%20Size)
 
 音声つきのPowerPointファイルを全自動で講義動画のような動画ファイルに変換します。
 
@@ -17,6 +16,30 @@
 
 - 音声が付加されていないスライドが動画中で表示される時間の指定
 - LibreofficeでPowerPointファイルをPDFに変換したときに表示されるアイコン<img src="pics/audio_icon.png" width="20px">の自動削除
+
+# しくみ
+
+<p align="left">
+    <img src="pics/overview.svg" width="640px">
+</p>
+
+① 引数に渡したPowerPointファイルを展開
+
+② `ppt/slides`以下の`slide*.xml`を解析し、オーディオアイコン（\#機能詳細 参照）に対応するタグを削除
+
+③ ②の加工を施したファイル群を再びPowerPointファイルに圧縮
+
+④ Libreofficeのコンバータを使ってPowerPointファイルをPDFファイルに変換
+
+⑤ poppler-utilsを使って④のPDFファイルの各ページを連番pngファイルに変換
+
+⑥ `ppt/slides/_rels`以下の`slide*.xml.rels`を解析し、そこに記述されている[Relationships](https://docs.microsoft.com/ja-jp/office/open-xml/structure-of-a-presentationml-document)に基づいて各スライドに対応するm4aファイルを取得
+
+⑦ 音声の無いスライドを動画に変換する際に使う無音のm4aファイルを作成
+
+⑧ ⑤のpngファイルと⑥, ⑦で取得したm4aファイルを合成し各スライドに対応するmp4ファイル群に変換
+
+⑨ ⑧で生成したmp4ファイルらを同一コーデックで単純連結し、最終的なmp4ファイルを出力
 
 # 依存パッケージ
 
