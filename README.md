@@ -37,11 +37,13 @@
 sudo apt update && sudo apt --no-install-recommends -y install libreoffice-core libreoffice-impress default-jre libreoffice-java-common poppler-utils ffmpeg libzip-dev fonts-noto-cjk fonts-noto-cjk-extra
 ```
 
-## インストール
+# インストール
 
 ### linux-x86-64環境
 
 [こちら](https://github.com/t0d4/pptx2mp4Converter/releases/latest)からビルド済みバイナリをダウンロードし、実行権限を付与してください。動作に必要な外部コマンド・共有ライブラリが揃っているかを`./pptx2mp4Converter --chkdeps`で確認できます。
+
+Hint) 自分でビルドしたい方はNimの実行環境を整備し、`choosenim`, `nimble`をインストール後、レポジトリのルートで`nimble build -d:release`を実行してください。
 
 ### それ以外
 
