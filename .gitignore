@@ -2,3 +2,4 @@
 *.ppsx
 experiments*
 tmp*
+bin*
