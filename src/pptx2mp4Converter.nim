@@ -30,17 +30,17 @@ Usage:
   pptx2mp4conv --version
 
 Options:
-  -o FILE --output=FILE  Output file name.
-  -h --help     Show this screen.
-  --version  Show version.
-  --chkdeps     Check whether all dependencies are installed.
-  --duration-of-silent-slide=<s>  Duration of silent slide in seconds [default: 5].
-  --libreoffice-executable=<path>  Path to libreoffice executable. (See the Note below)
-  --silent     Do not show messages.
+  -o FILE --output=FILE             Name of the output mp4.
+  -h --help                         Show this screen.
+  --version                         Show the version.
+  --chkdeps                         Check whether all dependencies are installed.
+  --duration-of-silent-slide=<s>    Specify how long slides without audio will be shown in the output video. [default: 5]
+  --libreoffice-executable=<path>   Path to the libreoffice executable. (See the Note below)
+  --silent                          Do not show any messages.
 
 Note:
   Since Libreoffice executables have various namings (e.g. soffice, libreoffice, libreoffice7.2, etc.),
-  this program sometimes fails to find the correct executable. In that case, you can specify the path to
+  this program sometimes fails to automatically find the correct executable. In that case, you can specify the path to
   the executable using the --libreoffice-executable option. Be careful that this option deactivates dependency checking.
 """
 
@@ -59,7 +59,7 @@ const SilentM4AFilepath: string = TmpDirRoot.joinPath("silent.m4a")
 
 
 when isMainModule:
-  # Delete the temporary directory if it exists, and register removal at the exit of this program
+  # Delete the temporary directory if it exists, and register removal of it at the exit of this program
   let deleteTempDir = generateTempDirRemover(TmpDirRoot)
   deleteTempDir()
   addExitProc(deleteTempDir)
@@ -135,7 +135,7 @@ when isMainModule:
         filepathInArchive: string
       for file in walkDirRec(ExtractedPPTXDir, yieldFilter={pcFile}):
         tokens = file.split($DirSep)
-        # tokens is an array like ["", "tmp", "pptx2mp4conv", "extracted", "ppt", "slides", "slide1.xml"]
+        # tokens is a sequence like @["", "tmp", "pptx2mp4conv", "extracted", "ppt", "slides", "slide1.xml"]
         # so filepath in the zip archive will start from 4th element in the array
         filepathInArchive = tokens[4..^1].join($DirSep)
         modifiedPPTX.addFile(filepathInArchive, file)
@@ -209,7 +209,7 @@ when isMainModule:
 
   withProgressDisplayAndErrorHandling(
     shouldBeSilent = silent,
-    message = "5/5  Merging all temporary video files into one video file:"
+    message = "5/5  Merging all temporary video files into single video file:"
   ):
     tmpVideoFilepaths.concatenateVideos(
       tmpVideoFileListPath = TmpVideoFileListPath,

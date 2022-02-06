@@ -12,7 +12,7 @@ import std/[
   wrapnils
   ]
 
-const SleepLengthBetweenIOOperations* = 2000
+const SleepLengthBetweenIOOperations* = 1000
 
 type
   MediaError* = object of CatchableError
@@ -84,7 +84,7 @@ proc createSilentAudioFile*(duration: int, saveTo: string): void {.raises: [Medi
 
 
 proc convertIntoPDF*(pptxFilepath: string, libreofficeExecutable: string, saveDir: string): void {.raises: [MediaError, ValueError].} =
-  let returnCode = execCmd("{libreofficeExecutable} --headless --convert-to pdf:impress_pdf_Export {pptxFilepath} --outdir {saveDir} > /dev/null 2>&1".fmt)
+  let returnCode = execCmd("{libreofficeExecutable} --convert-to pdf:impress_pdf_Export {pptxFilepath} --outdir {saveDir} > /dev/null 2>&1".fmt)
   if returnCode != 0:
     raise newException(MediaError, "Failed to convert pptx into pdf")
   sleep(SleepLengthBetweenIOOperations)
