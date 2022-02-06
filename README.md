@@ -1,5 +1,8 @@
 # pptx2mp4Converter
 
+[![build](https://github.com/t0d4/pptx2mp4Converter/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/t0d4/pptx2mp4Converter/actions/workflows/main.yml)
+![](https://img.shields.io/github/size/t0d4/pptx2mp4Converter/bin/pptx2mp4Converter?color=blue&label=Binary%20Size)
+
 音声つきのPowerPointファイルを全自動で講義動画のような動画ファイルに変換します。
 
 動作環境は**Linux Desktop環境**を想定しています。
