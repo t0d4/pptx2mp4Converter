@@ -32,7 +32,7 @@ jobs:
     - run: nimble install -Y
     - run: pptx2mp4Converter --chkdeps
     - name: Create artifact
-      run: tar czf pptx2mp4Converter_${{ runner.os }}.tar.gz README.md pptx2mp4Converter
+      run: tar czf pptx2mp4Converter_${{ runner.os }}.tar.gz README.md bin/pptx2mp4Converter
     - name: Release binary
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
