@@ -1,8 +1,8 @@
 # pptx2mp4Converter
 
-![build](https://github.com/t0d4/pptx2mp4Converter/actions/workflows/main.yml/badge.svg)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/t0d4/pptx2mp4Converter?color=yellow&display_name=tag)
 ![Platform](https://img.shields.io/badge/platform-linux--64-lightgrey)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/t0d4/pptx2mp4Converter?color=blueviolet&display_name=tag)
+![build](https://github.com/t0d4/pptx2mp4Converter/actions/workflows/main.yml/badge.svg)
 ![Binary Size](https://img.shields.io/github/size/t0d4/pptx2mp4Converter/bin/pptx2mp4Converter?label=Binary%20Size)
 
 音声つきのPowerPointファイルを全自動で講義動画のような動画ファイルに変換します。
