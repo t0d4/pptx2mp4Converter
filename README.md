@@ -3,6 +3,7 @@
 ![Platform](https://img.shields.io/badge/platform-linux--64-lightgrey)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/t0d4/pptx2mp4Converter?color=blueviolet&display_name=tag)
 ![build](https://github.com/t0d4/pptx2mp4Converter/actions/workflows/main.yml/badge.svg)
+![Binary size](https://img.shields.io/badge/Binary%20Size-724K-blue)
 
 音声つきのPowerPointファイルを全自動で講義動画のような動画ファイルに変換します。
 
