@@ -13,6 +13,10 @@ jobs:
       NIM_VERSION: stable
     steps:
     - uses: actions/checkout@v1
+    - uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+          architecture: "x64"
     - name: Cache choosenim
       id: cache-choosenim
       uses: actions/cache@v1
@@ -31,6 +35,18 @@ jobs:
     - run: nimble build -d:release -Y
     - run: nimble install -Y
     - run: pptx2mp4Converter --chkdeps
+    - name: Collect information and update README.md
+      working-directory: scripts
+      run: |
+        BINARY_SIZE=`ls -lh ../bin/pptx2mp4Converter | awk '{print $5}'`
+        python update_readme.md --binary_size=$BINARY_SIZE
+    - name: Commit changes of README.md
+      run: |
+        git config --global user.name "Takaaki Toda"
+        git config --global user.email "todatakaaki@gmail.com"
+        git add README.md
+        git commit -m 'automatic update of README.md by GitHub Actions'
+        git push origin main
     - name: Create artifact
       run: tar czf pptx2mp4Converter_${{ runner.os }}.tar.gz README.md bin/pptx2mp4Converter
     - name: Release binary
