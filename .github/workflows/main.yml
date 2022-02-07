@@ -39,7 +39,7 @@ jobs:
       working-directory: scripts
       run: |
         BINARY_SIZE=`ls -lh ../bin/pptx2mp4Converter | awk '{print $5}'`
-        python update_readme.md --binary_size=$BINARY_SIZE
+        python update_readme.py --binary_size=$BINARY_SIZE
     - name: Commit changes of README.md
       run: |
         git config --global user.name "Takaaki Toda"
