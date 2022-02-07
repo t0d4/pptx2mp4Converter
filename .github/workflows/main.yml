@@ -42,11 +42,11 @@ jobs:
         python update_readme.py --binary_size=$BINARY_SIZE
     - name: Commit changes of README.md
       run: |
-        git config --global user.name "Takaaki Toda"
-        git config --global user.email "todatakaaki@gmail.com"
+        git config --global user.name "${{ github.actor }}"
+        git config --global user.email "${{ github.actor }}@users.noreply.github.com"
         git add README.md
         git commit -m 'automatic update of README.md by GitHub Actions'
-        git push origin main
+        git push origin HEAD:main
     - name: Create artifact
       run: tar czf pptx2mp4Converter_${{ runner.os }}.tar.gz README.md bin/pptx2mp4Converter
     - name: Release binary
